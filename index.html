@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圓心角和扇形</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 MathJax 3 CDN -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        // 配置 MathJax 以處理 LaTeX 數學符號
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']], // 行內數學符號使用 $...$ 或 \(...\)
+                displayMath: [['$$', '$$'], ['\\[', '\\]']] // 獨立數學符號使用 $$...$$ 或 \[...\]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <style>
+        /* 自定義字體為 Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* 淺灰色背景 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* 最小高度為視窗高度 */
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff; /* 白色容器背景 */
+            border-radius: 16px; /* 圓角 */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* 柔和的陰影 */
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 32px;
+        }
+        canvas {
+            border: 2px solid #cbd5e1; /* 邊框顏色 */
+            background-color: #e2e8f0; /* 畫布背景 */
+            border-radius: 8px; /* 畫布圓角 */
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto; /* 確保響應式高度 */
+        }
+        input[type="range"] {
+            -webkit-appearance: none; /* 移除預設樣式 */
+            width: 100%;
+            height: 10px;
+            background: #d1d5db; /* 軌道背景色 */
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            border-radius: 5px; /* 軌道圓角 */
+        }
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%; /* 圓形滑塊 */
+            background: #4f46e5; /* 滑塊顏色 */
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        @media (min-width: 768px) {
+            .interactive-section {
+                flex-direction: row;
+            }
+            .canvas-container {
+                flex: 1;
+            }
+            .controls-info {
+                flex: 1;
+                padding-left: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-4xl font-extrabold text-gray-800 mb-6 text-center">圓心角與扇形探索</h1>
+        <p class="text-lg text-gray-600 mb-8 text-center">
+            透過調整圓心角，您可以觀察扇形的變化，並了解其面積和弧長如何計算。
+        </p>
+
+        <div class="interactive-section md:flex md:items-center md:justify-between gap-8 mb-8">
+            <div class="canvas-container w-full md:w-1/2 flex justify-center items-center p-4 bg-blue-50 rounded-lg shadow-inner">
+                <canvas id="circleCanvas" width="300" height="300" class="rounded-lg"></canvas>
+            </div>
+
+            <div class="controls-info w-full md:w-1/2 p-4 bg-green-50 rounded-lg shadow-inner mt-6 md:mt-0">
+                <div class="mb-6">
+                    <label for="angleSlider" class="block text-gray-700 text-lg font-bold mb-3">調整圓心角：</label>
+                    <input type="range" id="angleSlider" min="0" max="360" value="90" class="w-full">
+                </div>
+
+                <div class="bg-gray-100 p-6 rounded-lg border border-gray-200">
+                    <p class="text-xl font-semibold text-gray-800 mb-3">
+                        當前圓心角：<span id="currentAngle" class="text-indigo-600 font-extrabold">90°</span>
+                    </p>
+                    <p class="text-xl font-semibold text-gray-800 mb-3">
+                        扇形半徑 (r)：<span id="currentRadius" class="text-purple-600 font-extrabold">100 px</span>
+                    </p>
+                    <p class="text-xl font-semibold text-gray-800 mb-3">
+                        扇形面積：<span id="sectorArea" class="text-teal-600 font-extrabold"></span>
+                    </p>
+                    <p class="text-xl font-semibold text-gray-800">
+                        弧長：<span id="arcLength" class="text-orange-600 font-extrabold"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="explanation-section p-6 bg-yellow-50 rounded-lg shadow-md">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4 border-b-2 border-yellow-300 pb-2">學習圓心角和扇形</h2>
+            <div class="text-gray-700 leading-relaxed space-y-4">
+                <p>
+                    <strong>圓心角 (Central Angle)</strong> 是指一個圓中，以圓心為頂點，兩條半徑為邊所形成的角。這個角的大小決定了它所對應的扇形和弧線的大小。
+                </p>
+                <p>
+                    <strong>扇形 (Sector)</strong> 是圓的一部分，由兩條半徑和它們之間所夾的弧所圍成。它就像圓形披薩的一個切片。
+                </p>
+                <p>
+                    計算扇形面積和弧長的公式如下：
+                </p>
+                <ul class="list-disc list-inside ml-4">
+                    <li>
+                        <strong>扇形面積 ($A$)：</strong>
+                        如果圓心角為 $\theta$ (度)，半徑為 $r$，則扇形面積公式為：
+                        $$A = \frac{\theta}{360^\circ} \times \pi r^2$$
+                        這個公式表示扇形面積佔整個圓面積的比例。
+                    </li>
+                    <li>
+                        <strong>弧長 ($L$)：</strong>
+                        如果圓心角為 $\theta$ (度)，半徑為 $r$，則弧長公式為：
+                        $$L = \frac{\theta}{360^\circ} \times 2 \pi r$$
+                        這個公式表示弧長佔整個圓周長的比例。
+                    </li>
+                </ul>
+                <p>
+                    透過這個互動工具，您可以直觀地看到當圓心角改變時，扇形面積和弧長是如何隨之變化的！
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 獲取畫布元素和其 2D 渲染上下文
+        const canvas = document.getElementById('circleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 獲取滑塊和顯示元素
+        const angleSlider = document.getElementById('angleSlider');
+        const currentAngleSpan = document.getElementById('currentAngle');
+        const currentRadiusSpan = document.getElementById('currentRadius');
+        const sectorAreaSpan = document.getElementById('sectorArea');
+        const arcLengthSpan = document.getElementById('arcLength');
+
+        // 定義圓的屬性
+        const RADIUS = 100; // 半徑
+        const centerX = canvas.width / 2; // 圓心 X 座標
+        const centerY = canvas.height / 2; // 圓心 Y 座標
+
+        // 顯示半徑
+        currentRadiusSpan.textContent = `${RADIUS} px`;
+
+        /**
+         * 繪製圓心角和扇形
+         * @param {number} angleDegrees - 圓心角，單位為度
+         */
+        function drawCircleAndSector(angleDegrees) {
+            // 清除畫布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 繪製整個圓（背景）
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, RADIUS, 0, Math.PI * 2);
+            ctx.strokeStyle = '#a0aec0'; // 灰色邊框
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 將角度從度轉換為弧度，並調整為從正 X 軸開始
+            // 0 弧度對應圓的右側（3點鐘方向），逆時針增加
+            const startAngleRad = 0; // 從 3 點鐘方向開始
+            const endAngleRad = angleDegrees * Math.PI / 180; // 結束角度
+
+            // 繪製扇形
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY); // 移動到圓心
+            ctx.arc(centerX, centerY, RADIUS, startAngleRad, endAngleRad); // 繪製弧線
+            ctx.closePath(); // 將路徑閉合到圓心
+            ctx.fillStyle = 'rgba(79, 70, 229, 0.4)'; // 扇形填充顏色 (半透明藍色)
+            ctx.fill();
+            ctx.strokeStyle = '#4f46e5'; // 扇形邊框顏色
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 繪製兩條半徑
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY); // 第一條半徑從圓心到起點
+            ctx.lineTo(centerX + RADIUS * Math.cos(startAngleRad), centerY + RADIUS * Math.sin(startAngleRad));
+            ctx.strokeStyle = '#4f46e5';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY); // 第二條半徑從圓心到終點
+            ctx.lineTo(centerX + RADIUS * Math.cos(endAngleRad), centerY + RADIUS * Math.sin(endAngleRad));
+            ctx.strokeStyle = '#4f46e5';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 繪製圓心點
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#4f46e5';
+            ctx.fill();
+
+            // 繪製角度標記 (小弧線)
+            if (angleDegrees > 0 && angleDegrees < 360) {
+                ctx.beginPath();
+                // 為了避免和扇形邊線重疊，稍微縮小弧線半徑
+                ctx.arc(centerX, centerY, RADIUS / 4, startAngleRad, endAngleRad);
+                ctx.strokeStyle = '#ef4444'; // 紅色
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 繪製角度文本
+                ctx.fillStyle = '#ef4444';
+                ctx.font = 'bold 16px Arial';
+                // 計算角度文本位置，使其位於扇形內部的中心附近
+                const midAngleRad = startAngleRad + endAngleRad / 2;
+                const textRadius = RADIUS / 2;
+                const textX = centerX + textRadius * Math.cos(midAngleRad);
+                const textY = centerY + textRadius * Math.sin(midAngleRad);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${angleDegrees}°`, textX, textY);
+            }
+        }
+
+        /**
+         * 計算並顯示扇形面積和弧長
+         * @param {number} angleDegrees - 圓心角，單位為度
+         */
+        function calculateAndDisplay(angleDegrees) {
+            // 更新當前圓心角顯示
+            currentAngleSpan.textContent = `${angleDegrees}°`;
+
+            // 將角度從度轉換為弧度
+            const angleRadians = angleDegrees * Math.PI / 180;
+
+            // 計算扇形面積
+            const sectorArea = (angleDegrees / 360) * Math.PI * Math.pow(RADIUS, 2);
+            sectorAreaSpan.textContent = `${sectorArea.toFixed(2)} px²`;
+
+            // 計算弧長
+            const arcLength = (angleDegrees / 360) * 2 * Math.PI * RADIUS;
+            arcLengthSpan.textContent = `${arcLength.toFixed(2)} px`;
+        }
+
+        // 當滑塊值改變時更新
+        angleSlider.addEventListener('input', (event) => {
+            const angle = parseInt(event.target.value);
+            drawCircleAndSector(angle);
+            calculateAndDisplay(angle);
+            // MathJax.typesetPromise(); // 每次變動時重新排版（可能不必要，因為數字顯示不會用到LaTeX）
+        });
+
+        // 初始化繪圖和計算
+        function initialize() {
+            const initialAngle = parseInt(angleSlider.value);
+            drawCircleAndSector(initialAngle);
+            calculateAndDisplay(initialAngle);
+            // 在頁面加載時調用 MathJax 渲染 LaTeX
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise();
+            }
+        }
+
+        // 頁面載入完成後執行初始化
+        window.onload = initialize;
+
+        // 處理視窗大小改變，確保畫布內容重新繪製並保持居中
+        window.addEventListener('resize', () => {
+            initialize();
+        });
+
+    </script>
+</body>
+</html>
